@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+ nostrnews_cache_service:
+   build:
+     context: .
+     dockerfile: Dockerfile
+   ports:
+     - 3008:8080
+   volumes:
+     - ./database:/app/database
