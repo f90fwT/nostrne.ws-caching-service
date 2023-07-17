@@ -90,7 +90,7 @@ api.get('/', async (req, res) => {
 });
 
 pool.on('open', relay => {
-    relay.subscribe("subid", { limit: 1, kinds: [1, 7/*, 9735*/], })
+    relay.subscribe("subid", { limit: 1, kinds: [1, 7, 9735], })
 });
 
 pool.on('event', async (relay, sub_id, ev) => {
@@ -124,7 +124,7 @@ pool.on('event', async (relay, sub_id, ev) => {
     }
 
     // Check reactions
-    if (ev.kind === 7) {
+    if (ev.kind === 7 || ev.kind === 9735) {
         if (ev.tags[0]) {
             for (let i = 0; i < ev.tags.length; i++) {
                 if (ev.tags[i][0] === "e") {
