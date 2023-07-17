@@ -91,8 +91,8 @@ export async function calculate() {
 
         const upvoteCount = newReactions.length;
 
-        let algoUpvoteScore = calculateRanking(upvoteCount, Date.now() - Number(note.CreatedAt), 0.2).toFixed(16);
-        let algoZapsatsScore = calculateRanking(zapSats, Date.now() - Number(note.CreatedAt), 0.2).toFixed(16);
+        let algoUpvoteScore = calculateRanking(upvoteCount, Date.now() - Number(note.CreatedAt), 0.8).toFixed(24);
+        let algoZapsatsScore = calculateRanking(zapSats, Date.now() - Number(note.CreatedAt), 0.8).toFixed(24);
 
         data.push({ ID: note.ID, Content: note.Content, PubKey: note.PubKey, Sig: note.Sig, Tags: JSON.parse(note.Tags), CreatedAt: JSON.parse(note.CreatedAt), Relays: JSON.parse(note.Relays), algoUpvoteScore, algoZapsatsScore, zapsCount, upvoteCount, zapSats })
     }
