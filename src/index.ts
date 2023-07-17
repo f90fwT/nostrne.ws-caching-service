@@ -90,7 +90,7 @@ api.get('/', async (req, res) => {
 });
 
 pool.on('open', relay => {
-    relay.subscribe("subid", { limit: 1, kinds: [1, 7, 9735], })
+    relay.subscribe("subid", { limit: 1, kinds: [1, 7/*, 9735*/], })
 });
 
 pool.on('event', async (relay, sub_id, ev) => {
@@ -100,8 +100,8 @@ pool.on('event', async (relay, sub_id, ev) => {
     }
 
     // Check Tag
-    let hasCorrectTag = false;
     if (ev.kind === 1) {
+        let hasCorrectTag = false;
         if (ev.tags[0]) {
             for (let i = 0; i < ev.tags.length; i++) {
                 if (ev.tags[i][0] === "t" && ev.tags[i][1] === "nostrnews") {
@@ -109,14 +109,30 @@ pool.on('event', async (relay, sub_id, ev) => {
                 }
             }
         }
-    }
-    if (hasCorrectTag === false) {
-        return;
+        if (hasCorrectTag === false) {
+            return;
+        }
+        // Check content
+        if (!ev.content.startsWith("nostrne.ws post") && !ev.content.includes("title: ")) {
+            return;
+        }
     }
 
-    // Check content
-    if (!ev.content.includes("title: ")) {
-        return;
+    // Check reactions
+    if (ev.kind === 7) {
+        if (ev.tags[0]) {
+            for (let i = 0; i < ev.tags.length; i++) {
+                if (ev.tags[i][0] === "e") {
+                    let aboveRow: events.Row = await db.get(`SELECT * FROM events WHERE ID = ? LIMIT 1`, [ev.tags[i][1]]);
+                    if (aboveRow) {
+                        
+                    } else {
+                        return;
+                    }
+                }
+            }
+        }
+
     }
 
     let row: events.Row = await db.get(`SELECT * FROM events WHERE ID = ? AND Sig = ? LIMIT 1`, [ev.id, ev.sig])
