@@ -7,21 +7,21 @@ import { calculateRanking, paginate } from './util.js';
 import { calculate, cleanDb } from './main.js';
 
 const relays = [
-    "wss://relay.damus.io",
-    "wss://nos.lol",
-    "wss://relay.snort.social",
-    "wss://nostr.wine",
     "wss://relay.nostr.band",
-    "wss://brb.io",
-    "wss://nostr.walletofsatoshi.com",
+    "wss://relay.f7z.io",
+    "wss://nostr.wine",
+    "wss://relay.damus.io",
+    "wss://relayable.org",
+    "wss://nos.lol",
     "wss://nostr.bitcoiner.social",
+    "wss://nostr-pub.wellorder.net",
     "wss://eden.nostr.land",
-    "wss://relay.nostr.bg",
-    "wss://nostr.rocks",
-    "wss://atlas.nostr.land",
-    "wss://nostr.zebedee.cloud",
-    "wss://puravida.nostr.land",
-    "wss://relay.nostr.info",
+    "wss://relay.primal.net",
+    "wss://lightningrelay.com",
+    "wss://nostr.orangepill.dev",
+    "wss://relay.snort.social",
+    "wss://eden.nostr.land",
+    "wss://nostr.mutinywallet.com",
 ]
 
 // # Init
@@ -99,8 +99,8 @@ pool.on('event', async (relay, sub_id, ev) => {
         return;
     }
 
-    // Check Tag
     if (ev.kind === 1) {
+        // Check Tag
         let hasCorrectTag = false;
         if (ev.tags[0]) {
             for (let i = 0; i < ev.tags.length; i++) {
@@ -112,8 +112,13 @@ pool.on('event', async (relay, sub_id, ev) => {
         if (hasCorrectTag === false) {
             return;
         }
+
+
         // Check content
-        if (!ev.content.startsWith("nostrne.ws post") && !ev.content.includes("title: ")) {
+        if (!ev.content.startsWith("nostrne.ws post")) {
+            return;
+        }
+        if (!ev.content.includes("title: ")) {
             return;
         }
     }
@@ -125,7 +130,7 @@ pool.on('event', async (relay, sub_id, ev) => {
                 if (ev.tags[i][0] === "e") {
                     let aboveRow: events.Row = await db.get(`SELECT * FROM events WHERE ID = ? LIMIT 1`, [ev.tags[i][1]]);
                     if (aboveRow) {
-                        
+
                     } else {
                         return;
                     }

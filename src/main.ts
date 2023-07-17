@@ -9,6 +9,16 @@ export async function calculate() {
     const daysAgo = new Date();
     daysAgo.setDate(daysAgo.getDate() - 30); // Latest 30 days
 
+    // Remove duplicate likes
+    await db.all(`DELETE FROM events
+    WHERE (PubKey, Tags) IN (
+        SELECT PubKey, Tags
+        FROM events
+        WHERE Kind = 7
+        GROUP BY PubKey, Tags
+        HAVING COUNT(*) > 1
+    );`);
+
     const rows = await db.all(`SELECT * FROM events WHERE datetime(CreatedAt, 'unixepoch') >= datetime(?, 'unixepoch') GROUP BY ID, Sig`, daysAgo.getTime() / 1000);
 
     const { notes, reactions, zaps } = rows.reduce((acc, row: events.Row) => {
@@ -33,7 +43,7 @@ export async function calculate() {
     for (let i = 0; i < notes.length; i++) {
 
         let note: events.Row = notes[i];
-        let reactions: events.Row[] = [];
+        let newReactions: events.Row[] = [];
 
         let zapsCount = 0;
         let zapSats = 0;
@@ -46,7 +56,7 @@ export async function calculate() {
                 if (reactionTags[0]) {
                     for (let i = 0; i < reactionTags.length; i++) {
                         if (reactionTags[i][0] === "e" && reactionTags[i][1] === note.ID) {
-                            reactions.push(reaction);
+                            newReactions.push(reaction);
                         }
                     }
                 }
@@ -77,24 +87,11 @@ export async function calculate() {
         }
 
         // Remove duplicate upvotes
-        const idOccurrences = {};
-        reactions.forEach(ev => {
-            const { ID } = ev;
-            idOccurrences[ID] = (idOccurrences[ID] || 0) + 1;
-        });
-        reactions.forEach(async ev => {
-            const { ID } = ev;
-            if (idOccurrences[ID] > 1) {
-                await db.run("DELETE FROM events WHERE ID = ?", ID);
-                const index = reactions.findIndex(item => item.ID === ID);
-                reactions.splice(index, 1);
-                idOccurrences[ID]--;
-            }
-        });
+        // newReactions = Array.from(new Map(newReactions.map(item => [item.PubKey, item])).values());
 
-        const upvoteCount = reactions.length;
+        const upvoteCount = newReactions.length;
 
-        let algoUpvoteScore = calculateRanking(reactions.length, Date.now() - Number(note.CreatedAt), 0.2).toFixed(16);
+        let algoUpvoteScore = calculateRanking(upvoteCount, Date.now() - Number(note.CreatedAt), 0.2).toFixed(16);
         let algoZapsatsScore = calculateRanking(zapSats, Date.now() - Number(note.CreatedAt), 0.2).toFixed(16);
 
         data.push({ ID: note.ID, Content: note.Content, PubKey: note.PubKey, Sig: note.Sig, Tags: JSON.parse(note.Tags), CreatedAt: JSON.parse(note.CreatedAt), Relays: JSON.parse(note.Relays), algoUpvoteScore, algoZapsatsScore, zapsCount, upvoteCount, zapSats })
@@ -128,6 +125,16 @@ export async function cleanDb() {
         )
         `, ID, ID);
     }
+
+    // Remove duplicate likes
+    await db.all(`DELETE FROM events
+    WHERE (PubKey, Tags) IN (
+        SELECT PubKey, Tags
+        FROM events
+        WHERE Kind = 7
+        GROUP BY PubKey, Tags
+        HAVING COUNT(*) > 1
+    );`);
 
     // Filter Rows
     const rows = await db.all(`SELECT * FROM events`);
